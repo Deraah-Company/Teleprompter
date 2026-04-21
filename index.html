@@ -55,7 +55,8 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback } = React;
+        // إضافة useLayoutEffect للتحكم في مقاس الـ textarea ديناميكياً
+        const { useState, useEffect, useLayoutEffect, useRef, useCallback } = React;
 
         // --- الأيقونات (Icons) ---
         const IconPlay = ({ size=24, fill="none", className="" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
@@ -125,7 +126,8 @@
             <div className={`min-h-screen bg-gray-900 text-white selection:bg-blue-500 selection:text-white ${language === 'ar' ? 'dir-rtl' : 'dir-ltr'}`} style={{ direction: language === 'ar' ? 'rtl' : 'ltr' }}>
               {appStage === 'intro' && <IntroScreen onSelect={handleLanguageSelect} />}
               {appStage === 'editor' && <EditorScreen text={text} setText={setText} settings={settings} updateSetting={updateSetting} onStart={() => setAppStage('prompter')} language={language} />}
-              {appStage === 'prompter' && <PrompterScreen text={text} settings={settings} onExit={() => setAppStage('editor')} updateSetting={updateSetting} />}
+              {/* قمنا بتمرير setText إلى PrompterScreen ليتمكن من التعديل المباشر */}
+              {appStage === 'prompter' && <PrompterScreen text={text} setText={setText} settings={settings} onExit={() => setAppStage('editor')} updateSetting={updateSetting} />}
             </div>
           );
         }
@@ -278,11 +280,12 @@
                     <textarea
                       value={text}
                       onChange={(e) => setText(e.target.value)}
-                      className="w-full h-full min-h-[500px] bg-transparent text-white p-8 resize-none focus:outline-none hide-scrollbar"
+                      /* تم التعديل هنا: إزالة تحجيم الخط بـ 40 بيكسل ليكون مطابق تماما لشاشة العرض */
+                      className="w-full h-full min-h-[500px] bg-transparent text-white px-4 py-8 md:px-8 resize-none focus:outline-none hide-scrollbar"
                       placeholder={isAr ? "ابدأ بكتابة النص هنا..." : "Start typing your script here..."}
                       style={{
                         fontFamily: settings.fontFamily,
-                        fontSize: `${Math.min(settings.fontSize, 40)}px`,
+                        fontSize: `${settings.fontSize}px`, // هنا التعديل الذي سيجعل التفاف الكلمات متطابق تماماً
                         lineHeight: settings.lineHeight,
                         textAlign: settings.textAlign,
                       }}
@@ -295,7 +298,7 @@
         }
 
         // --- PROMPTER SCREEN COMPONENT ---
-        function PrompterScreen({ text, settings, onExit, updateSetting }) {
+        function PrompterScreen({ text, setText, settings, onExit, updateSetting }) {
           const containerRef = useRef(null);
           const textRef = useRef(null);
           const requestRef = useRef(null);
@@ -315,6 +318,22 @@
           useEffect(() => { speedRef.current = settings.speed; }, [settings.speed]);
 
           const controlsTimeoutRef = useRef(null);
+
+          // هذا الجزء خاص بتمدد مساحة النص تلقائياً بحسب محتواه
+          useLayoutEffect(() => {
+            if (textRef.current) {
+              const container = containerRef.current;
+              // الاحتفاظ بمكان الـ scroll كي لا تقفز الشاشة أثناء الكتابة
+              const prevScrollTop = container ? container.scrollTop : 0;
+              
+              textRef.current.style.height = '0px';
+              textRef.current.style.height = textRef.current.scrollHeight + 'px';
+              
+              if (container) {
+                container.scrollTop = prevScrollTop;
+              }
+            }
+          }, [text, settings.fontSize, settings.lineHeight, settings.textWidth, settings.fontFamily]);
 
           useEffect(() => {
             if (isPlaying) {
@@ -359,6 +378,15 @@
 
           useEffect(() => {
             const handleKeyDown = (e) => {
+              // إذا ضغط المستخدم على زر Esc، نخرج من التعديل ليسهل استخدام زر المسطرة لاحقاً
+              if (e.key === 'Escape') {
+                if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') {
+                  document.activeElement.blur();
+                }
+                return;
+              }
+
+              // السماح بالكتابة العادية دون تفعيل أزرار التحكم
               if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
               if (['Space', ' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
@@ -406,7 +434,7 @@
           }, []);
 
           const handleMouseDown = (e) => {
-            if (e.target.closest('.controls-bar')) return;
+            if (e.target.closest('.controls-bar') || e.target.tagName === 'TEXTAREA') return;
             setIsMousePaused(true);
           };
           
@@ -535,20 +563,21 @@
                 style={{ transform: transformStr }}
               >
                 <div className="mx-auto" style={{ paddingTop: '100vh', paddingBottom: '100vh', width: `${settings.textWidth ?? 100}%` }}>
-                  <div 
+                  {/* تم استبدال الـ div العادي بـ textarea ليدعم التعديل المباشر */}
+                  <textarea 
                     ref={textRef}
-                    className="px-4 md:px-8"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onFocus={() => setIsPlaying(false)} // إيقاف تلقائي للعرض بمجرد الضغط للتعديل
+                    className="w-full bg-transparent resize-none focus:outline-none overflow-hidden px-4 md:px-8"
                     style={{
                       color: settings.textColor,
                       fontFamily: settings.fontFamily,
                       fontSize: `${settings.fontSize}px`,
                       lineHeight: settings.lineHeight,
                       textAlign: settings.textAlign,
-                      whiteSpace: 'pre-wrap',
                     }}
-                  >
-                    {text}
-                  </div>
+                  />
                 </div>
               </div>
 
