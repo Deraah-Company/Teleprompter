@@ -15,8 +15,8 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
-    <!-- تحميل Babel لتشغيل كود React داخل المتصفح مباشرة -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- تحميل Babel لتشغيل كود React داخل المتصفح مباشرة (تم تحديد إصدار مستقر لتجنب أخطاء الاستيراد) -->
+    <script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
 
     <style>
         .hide-scrollbar::-webkit-scrollbar {
@@ -54,8 +54,8 @@
 <body>
     <div id="root"></div>
 
-    <script type="text/babel">
-        // إضافة useLayoutEffect للتحكم في مقاس الـ textarea ديناميكياً
+    <!-- إضافة data-type="module" لحل خطأ SyntaxError الخاص بـ import -->
+    <script type="text/babel" data-type="module">
         const { useState, useEffect, useLayoutEffect, useRef, useCallback } = React;
 
         // --- الأيقونات (Icons) ---
@@ -69,27 +69,79 @@
         const IconAlignRight = ({ size=24, className="" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="3" y1="6" x2="21" y2="6"></line><line x1="9" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
         const IconRefreshCcw = ({ size=24, className="" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>;
         const IconFlipVertical = ({ size=24, className="" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="8 21 12 17 16 21"></polyline><polyline points="8 3 12 7 16 3"></polyline><line x1="12" y1="2" x2="12" y2="22"></line></svg>;
-        const IconPalette = ({ size=24, className="" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>;
         const IconArrowLeftRight = ({ size=24, className="" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="8 16 4 12 8 8"></polyline><line x1="4" y1="12" x2="20" y2="12"></line><polyline points="16 8 20 12 16 16"></polyline></svg>;
         const IconCrosshair = ({ size=24, className="" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>;
         const IconMaximize = ({ size=24, className="" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>;
         const IconMinimize = ({ size=24, className="" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg>;
 
-        // Custom Hook to manage Local Storage
         function useStickyState(defaultValue, key) {
           const [value, setValue] = useState(() => {
-            const stickyValue = window.localStorage.getItem(key);
-            return stickyValue !== null ? JSON.parse(stickyValue) : defaultValue;
+            try {
+              const stickyValue = window.localStorage.getItem(key);
+              if (stickyValue !== null) {
+                return JSON.parse(stickyValue);
+              }
+            } catch (error) {
+              console.warn("Error reading localStorage, reverting to default or raw string", key);
+              const rawValue = window.localStorage.getItem(key);
+              if (rawValue && key === 'teleprompter_text') {
+                return rawValue;
+              }
+            }
+            return defaultValue;
           });
 
           useEffect(() => {
-            window.localStorage.setItem(key, JSON.stringify(value));
+            try {
+              window.localStorage.setItem(key, JSON.stringify(value));
+            } catch (err) {
+              console.error("Error saving to localStorage", err);
+            }
           }, [key, value]);
 
           return [value, setValue];
         }
 
-        // Custom Hook to manage Fullscreen
+        class ErrorBoundary extends React.Component {
+          constructor(props) {
+            super(props);
+            this.state = { hasError: false };
+          }
+
+          static getDerivedStateFromError(error) {
+            return { hasError: true };
+          }
+
+          componentDidCatch(error, errorInfo) {
+            console.error("Caught unhandled app error:", error, errorInfo);
+          }
+
+          render() {
+            if (this.state.hasError) {
+              return (
+                <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+                  <div className="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-red-500/30 text-center max-w-md w-full">
+                    <h1 className="text-2xl font-bold text-red-500 mb-4 font-sans">عفواً، حدث خطأ ما!</h1>
+                    <p className="text-gray-300 mb-6 font-sans">
+                      يبدو أن هناك تعارض في البيانات المحفوظة أو خطأ مفاجئ. يرجى مسح البيانات لإصلاح المشكلة.
+                    </p>
+                    <button 
+                      onClick={() => {
+                        window.localStorage.clear();
+                        window.location.reload();
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold transition shadow-lg font-sans w-full"
+                    >
+                      مسح البيانات وإعادة التحميل
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+            return this.props.children;
+          }
+        }
+
         function useFullscreen() {
           const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -115,12 +167,10 @@
         }
 
         function App() {
-          // Application State
-          const [appStage, setAppStage] = useState('intro'); // 'intro', 'editor', 'prompter'
+          const [appStage, setAppStage] = useState('intro');
           const [language, setLanguage] = useState('ar');
           const { isFullscreen, toggleFullscreen } = useFullscreen();
 
-          // Text and Settings State (Saved in LocalStorage)
           const [text, setText] = useStickyState('أهلاً بك في تطبيق التيليبرومبتر الاحترافي.\nاكتب نصك هنا...', 'teleprompter_text');
           const [settings, setSettings] = useStickyState({
             fontFamily: 'Tajawal, sans-serif',
@@ -130,14 +180,13 @@
             bgColor: '#000000',
             textColor: '#ffffff',
             speed: 30,
-            mirror: false, // Horizontal flip
-            flip: false,   // Vertical flip
-            textWidth: 100, // Text width percentage (30-100)
-            showGuide: false, // Reading Guide visibility
-            guidePosition: 30, // Position of guide from top (5-95%)
+            mirror: false,
+            flip: false,
+            textWidth: 100,
+            showGuide: false,
+            guidePosition: 30,
           }, 'teleprompter_settings');
 
-          // Helper to update specific setting
           const updateSetting = (key, value) => {
             setSettings(prev => ({ ...prev, [key]: value }));
           };
@@ -145,7 +194,6 @@
           const handleLanguageSelect = (lang) => {
             setLanguage(lang);
             setAppStage('editor');
-            // Set default alignment based on language
             if (lang === 'ar') updateSetting('textAlign', 'right');
             else updateSetting('textAlign', 'left');
           };
@@ -154,13 +202,11 @@
             <div className={`min-h-screen bg-gray-900 text-white selection:bg-blue-500 selection:text-white ${language === 'ar' ? 'dir-rtl' : 'dir-ltr'}`} style={{ direction: language === 'ar' ? 'rtl' : 'ltr' }}>
               {appStage === 'intro' && <IntroScreen onSelect={handleLanguageSelect} />}
               {appStage === 'editor' && <EditorScreen text={text} setText={setText} settings={settings} updateSetting={updateSetting} onStart={() => setAppStage('prompter')} language={language} isFullscreen={isFullscreen} toggleFullscreen={toggleFullscreen} />}
-              {/* قمنا بتمرير setText إلى PrompterScreen ليتمكن من التعديل المباشر */}
               {appStage === 'prompter' && <PrompterScreen text={text} setText={setText} settings={settings} onExit={() => setAppStage('editor')} updateSetting={updateSetting} isFullscreen={isFullscreen} toggleFullscreen={toggleFullscreen} />}
             </div>
           );
         }
 
-        // --- INTRO SCREEN COMPONENT ---
         function IntroScreen({ onSelect }) {
           return (
             <div className="animated-bg min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -198,7 +244,6 @@
           );
         }
 
-        // --- EDITOR SCREEN COMPONENT ---
         function EditorScreen({ text, setText, settings, updateSetting, onStart, language, isFullscreen, toggleFullscreen }) {
           const isAr = language === 'ar';
           
@@ -254,7 +299,7 @@
 
                     <div className="w-px h-6 bg-gray-700"></div>
 
-                    <div className="flex items-center gap-2" title={isAr ? 'تغيير عرض السطر لتقليل عدد الكلمات' : 'Change line width'}>
+                    <div className="flex items-center gap-2" title={isAr ? 'تغيير عرض السطر' : 'Change line width'}>
                       <IconArrowLeftRight size={16} className="text-gray-400" />
                       <input 
                         type="range" 
@@ -301,12 +346,11 @@
                     <textarea
                       value={text}
                       onChange={(e) => setText(e.target.value)}
-                      /* تم التعديل هنا: إزالة تحجيم الخط بـ 40 بيكسل ليكون مطابق تماما لشاشة العرض */
                       className="w-full h-full min-h-[500px] bg-transparent text-white px-4 py-8 md:px-8 resize-none focus:outline-none hide-scrollbar"
                       placeholder={isAr ? "ابدأ بكتابة النص هنا..." : "Start typing your script here..."}
                       style={{
                         fontFamily: settings.fontFamily,
-                        fontSize: `${settings.fontSize}px`, // هنا التعديل الذي سيجعل التفاف الكلمات متطابق تماماً
+                        fontSize: `${settings.fontSize}px`,
                         lineHeight: settings.lineHeight,
                         textAlign: settings.textAlign,
                       }}
@@ -318,7 +362,6 @@
           );
         }
 
-        // --- PROMPTER SCREEN COMPONENT ---
         function PrompterScreen({ text, setText, settings, onExit, updateSetting, isFullscreen, toggleFullscreen }) {
           const containerRef = useRef(null);
           const textRef = useRef(null);
@@ -340,11 +383,9 @@
 
           const controlsTimeoutRef = useRef(null);
 
-          // هذا الجزء خاص بتمدد مساحة النص تلقائياً بحسب محتواه
           useLayoutEffect(() => {
             if (textRef.current) {
               const container = containerRef.current;
-              // الاحتفاظ بمكان الـ scroll كي لا تقفز الشاشة أثناء الكتابة
               const prevScrollTop = container ? container.scrollTop : 0;
               
               textRef.current.style.height = '0px';
@@ -399,7 +440,6 @@
 
           useEffect(() => {
             const handleKeyDown = (e) => {
-              // إذا ضغط المستخدم على زر Esc، نخرج من التعديل ليسهل استخدام زر المسطرة لاحقاً
               if (e.key === 'Escape') {
                 if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') {
                   document.activeElement.blur();
@@ -407,7 +447,6 @@
                 return;
               }
 
-              // السماح بالكتابة العادية دون تفعيل أزرار التحكم
               if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
               if (['Space', ' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
@@ -592,12 +631,11 @@
                 style={{ transform: transformStr }}
               >
                 <div className="mx-auto" style={{ paddingTop: '100vh', paddingBottom: '100vh', width: `${settings.textWidth ?? 100}%` }}>
-                  {/* تم استبدال الـ div العادي بـ textarea ليدعم التعديل المباشر */}
                   <textarea 
                     ref={textRef}
-                    value={text}
+                    value={text || ''}
                     onChange={(e) => setText(e.target.value)}
-                    onFocus={() => setIsPlaying(false)} // إيقاف تلقائي للعرض بمجرد الضغط للتعديل
+                    onFocus={() => setIsPlaying(false)}
                     className="w-full bg-transparent resize-none focus:outline-none overflow-hidden px-4 md:px-8"
                     style={{
                       color: settings.textColor,
@@ -615,7 +653,11 @@
         }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
+        );
     </script>
 </body>
 </html>
