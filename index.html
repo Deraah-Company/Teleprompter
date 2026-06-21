@@ -2143,6 +2143,7 @@
 
     function ProjectEditor({ session, currentUser, onBack, onPlay, isFullscreen, toggleFullscreen }) {
       const { draft, loading, updateDraft } = session;
+      const [colorPanelOpen, setColorPanelOpen] = useState(false);
 
       if (loading || !draft) {
         return <LoadingScreen />;
@@ -2224,7 +2225,7 @@
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center justify-end gap-3">
                 <button
                   onClick={onBack}
                   className="p-3 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-xl border border-gray-700 shadow-lg transition"
@@ -2239,6 +2240,42 @@
                 >
                   {isFullscreen ? <IconMinimize size={24} /> : <IconMaximize size={24} />}
                 </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setColorPanelOpen((open) => !open)}
+                    className={`p-3 rounded-xl border border-gray-700 shadow-lg transition ${colorPanelOpen ? "bg-emerald-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white"}`}
+                    title={isAr ? "ألوان الشاشة" : "Screen colors"}
+                    aria-expanded={colorPanelOpen}
+                  >
+                    {isAr ? "الألوان" : "Colors"}
+                  </button>
+                  {colorPanelOpen && (
+                    <div className="absolute right-0 top-full z-30 mt-3 w-64 rounded-xl border border-gray-700 bg-gray-900 p-3 text-white shadow-2xl">
+                      <div className="mb-3 text-sm font-bold text-gray-200">{isAr ? "ألوان الشاشة" : "Screen colors"}</div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <label className="text-xs font-bold text-gray-400">
+                          {isAr ? "لون الخط" : "Text"}
+                          <input
+                            type="color"
+                            value={settings.textColor}
+                            onChange={(event) => updateSetting("textColor", event.target.value)}
+                            className="mt-2 h-11 w-full cursor-pointer rounded-lg border border-gray-700 bg-gray-950 p-1"
+                          />
+                        </label>
+                        <label className="text-xs font-bold text-gray-400">
+                          {isAr ? "لون الخلفية" : "Background"}
+                          <input
+                            type="color"
+                            value={settings.bgColor}
+                            onChange={(event) => updateSetting("bgColor", event.target.value)}
+                            className="mt-2 h-11 w-full cursor-pointer rounded-lg border border-gray-700 bg-gray-950 p-1"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={onPlay}
                   className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-3 rounded-xl font-bold shadow-lg transform transition hover:scale-105"
@@ -2252,7 +2289,7 @@
           </div>
 
           <div className="flex-1 w-full flex flex-col p-4 md:p-8 overflow-hidden">
-            <div className="bg-gray-800 rounded-2xl border border-gray-700 shadow-2xl flex-1 flex flex-col overflow-y-auto">
+            <div className="rounded-2xl border border-gray-700 shadow-2xl flex-1 flex flex-col overflow-y-auto" style={{ backgroundColor: settings.bgColor }}>
               <div className="flex-1 w-full mx-auto" style={{ width: `${settings.textWidth ?? 100}%`, transition: "width 0.3s ease" }}>
                 <textarea
                   value={draft.text}
@@ -2260,6 +2297,7 @@
                   className="w-full h-full min-h-[500px] bg-transparent text-white px-4 py-8 md:px-8 resize-none focus:outline-none hide-scrollbar"
                   placeholder={isAr ? "ابدأ بكتابة النص هنا..." : "Start typing your script here..."}
                   style={{
+                    color: settings.textColor,
                     fontFamily: settings.fontFamily,
                     fontSize: `${settings.fontSize}px`,
                     lineHeight: settings.lineHeight,
